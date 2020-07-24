@@ -1,27 +1,48 @@
 package com.news.studentpioneer;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.paging.PagedList;
+import androidx.recyclerview.widget.ConcatAdapter;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import io.customerly.Customerly;
+import me.zhanghai.android.fastscroll.FastScroller;
+import me.zhanghai.android.fastscroll.FastScrollerBuilder;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.provider.Settings;
+import android.telephony.TelephonyManager;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.Display;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AbsListView;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.airbnb.lottie.LottieAnimationView;
+import com.bumptech.glide.Glide;
 import com.firebase.ui.firestore.FirestoreRecyclerAdapter;
+import com.firebase.ui.firestore.FirestoreRecyclerAdapter_LifecycleAdapter;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
+import com.firebase.ui.firestore.paging.FirestorePagingOptions;
 import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdLoader;
 import com.google.android.gms.ads.AdRequest;
@@ -34,11 +55,30 @@ import com.google.android.gms.ads.formats.UnifiedNativeAd;
 import com.google.android.gms.ads.formats.UnifiedNativeAdView;
 import com.google.android.gms.ads.initialization.InitializationStatus;
 import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.dynamiclinks.FirebaseDynamicLinks;
+import com.google.firebase.dynamiclinks.PendingDynamicLinkData;
 import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.messaging.FirebaseMessaging;
+import com.google.firebase.messaging.RemoteMessage;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Objects;
+
+import static com.google.firebase.messaging.Constants.MessagePayloadKeys.SENDER_ID;
 
 public class Feed extends AppCompatActivity {
     @Nullable
@@ -57,6 +97,12 @@ public class Feed extends AppCompatActivity {
     @Nullable
     @BindView(R.id.postrecycler)
     RecyclerView postsre;
+    private DocumentSnapshot last;
+    private Boolean isscrolling=false;
+    PostAdaptor1 postAdaptor1;
+    PostAdaptor2 postAdaptor2;
+    PostAdaptor3 postAdaptor3;
+    int tech, covid, politics, entertainment, meme, sports, disaster, Ap, Telangana, memetelugu, memeenglish, memehindi;
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
     private CollectionReference posts = db.collection("posts");
 
@@ -64,24 +110,206 @@ public class Feed extends AppCompatActivity {
     LinearLayoutManager linearLayoutManager;
     private FrameLayout adContainerView;
     private AdView adView;
+    int order[];
+    public static int adsafter = 1;
+    String one;
+    private String FCM_API = "https://fcm.googleapis.com/fcm/send";
+    private String serverKey =
+            "key=" + "AAAASeXLGlk:APA91bFPIg-aaDbrgMg2zSqlIYKqzV4I77yMoxX1DhVs9zskHaE-Q2eIKdeKPsXTHScO5f_H6bGoxAJU3oMvXAVvi6InJgnHZ3c2Lv12PxxdcvMlLOpPY9Z0PmG7ln2fzQqAmtb4ABG2";
+    private String contentType = "application/json";
+
+  ConcatAdapter concatAdapter;
+    private Boolean islastitemreached;
+    int state=0;
+    String refered;
+    String first, second, third, fourth, fifth, sixth, seventh, eighth, nine, ten, eleven, twelle;
+
+    @SuppressLint("ResourceType")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_feed);
         ButterKnife.bind(this);
         firebaseAuth = FirebaseAuth.getInstance();
-        FirebaseFirestore firebaseFirestore = FirebaseFirestore.getInstance();
-        MobileAds.initialize(this, new OnInitializationCompleteListener() {
+
+
+
+
+        final String[] one1 = new String[1];
+
+        BottomNavigationView bottomNavigationView = (BottomNavigationView) findViewById(R.id.bottom_navigation);
+bottomNavigationView.setSelectedItemId(R.id.feed);
+        bottomNavigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
             @Override
-            public void onInitializationComplete(InitializationStatus initializationStatus) {
+            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+                switch (item.getItemId()) {
+
+
+                    case R.id.rewards:
+                        startActivity(new Intent(Feed.this,Daily_reward.class));
+                        overridePendingTransition(R.anim.right,R.anim.left);
+                        return true;
+                    case R.id.more:
+                        startActivity(new Intent(Feed.this,Options.class));
+                        return true;
+
+                }
+                return true;
             }
         });
-        adContainerView = findViewById(R.id.ad_view_container);
-        //  Create an AdView and set the ad unit ID on it.
-        adView = new AdView(this);
-        adView.setAdUnitId(getString(R.string.adaptive_banner_ad_unit_id));
-        adContainerView.addView(adView);
-        loadBanner();
+        postsre.setVisibility(View.INVISIBLE);
+        LottieAnimationView sh=findViewById(R.id.sh);
+
+        Handler handler1=new Handler();
+        handler1.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                postsre.setVisibility(View.VISIBLE);
+                sh.setVisibility(View.INVISIBLE);
+                sh.pauseAnimation();
+            }
+        },5000);
+
+        FirebaseFirestore firebaseFirestore = FirebaseFirestore.getInstance();
+        firebaseFirestore.collection("users").document(firebaseAuth.getCurrentUser().getUid()).get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+            @Override
+            public void onSuccess(DocumentSnapshot documentSnapshot) {
+                memeenglish = Integer.parseInt(Objects.requireNonNull(documentSnapshot.getString("memeenglish")));
+                tech = Integer.parseInt(Objects.requireNonNull(documentSnapshot.getString("tech")));
+                memehindi = Integer.parseInt(Objects.requireNonNull(documentSnapshot.getString("memehindi")));
+                memetelugu = Integer.parseInt(Objects.requireNonNull(documentSnapshot.getString("memetelugu")));
+                Telangana = Integer.parseInt(Objects.requireNonNull(documentSnapshot.getString("Telangana")));
+                Ap = Integer.parseInt(Objects.requireNonNull(documentSnapshot.getString("Ap")));
+                disaster = Integer.parseInt(Objects.requireNonNull(documentSnapshot.getString("disaster")));
+                sports = Integer.parseInt(Objects.requireNonNull(documentSnapshot.getString("sports")));
+                meme = Integer.parseInt(Objects.requireNonNull(documentSnapshot.getString("meme")));
+                entertainment = Integer.parseInt(Objects.requireNonNull(documentSnapshot.getString("entertainment")));
+                politics = Integer.parseInt(Objects.requireNonNull(documentSnapshot.getString("politics")));
+                covid = Integer.parseInt(Objects.requireNonNull(documentSnapshot.getString("covid")));
+                int temp;
+
+                order = new int[]{covid, politics, entertainment, meme, memeenglish, memehindi, memetelugu, Ap, Telangana, sports, disaster, tech};
+                if (covid > 15 || politics > 15 || entertainment > 15|| meme > 15 || memeenglish > 15 || memehindi > 15 || memetelugu > 15 || Ap > 15|| Telangana > 15 || sports > 15 || disaster > 15 || tech > 15) {
+
+
+                    for (int i = 0; i < 12; i++) {
+                        for (int j = i + 1; j < 12; j++) {
+                            if (order[i] < order[j]) {
+                                temp = order[i];
+                                order[i] = order[j];
+                                order[j] = temp;
+                            }
+                        }
+                    }
+
+                if (order[0] == covid) {
+                    first = "covid";
+
+                } else if (order[0] == politics) {
+                    first = "politics";
+                } else if (order[0] == meme) {
+                    first = "meme";
+
+                } else if (order[0] == entertainment) {
+                    first = "entertainment";
+                } else if (order[0] == memetelugu) {
+                    first = "memetelugu";
+                } else if (order[0] == memehindi) {
+                    first = "memehindi";
+                } else if (order[0] == memeenglish) {
+                    first = "memeenglish";
+                } else if (order[0] == Ap) {
+                    first = "Ap";
+                } else if (order[0] == Telangana) {
+                    first = "Telangana";
+                } else if (order[0] == sports) {
+                    first = "sports";
+                } else if (order[0] == disaster) {
+                    first = "disaster";
+                } else {
+                    first = "tech";
+                }
+
+                if (order[1] == covid) {
+                    second = "covid";
+
+                } else if (order[1] == politics) {
+                    second = "politics";
+                } else if (order[1] == meme) {
+                    second = "meme";
+                } else if (order[1] == entertainment) {
+                    second = "entertainment";
+                } else if (order[1] == memetelugu) {
+                    second = "memetelugu";
+                } else if (order[1] == memehindi) {
+                    second = "memehindi";
+                } else if (order[1] == memeenglish) {
+                    second = "memeenglish";
+                } else if (order[1] == Ap) {
+                    second = "Ap";
+                } else if (order[1] == Telangana) {
+                    second = "Telangana";
+                } else if (order[1] == sports) {
+                    second = "sports";
+                } else if (order[1] == disaster) {
+                    second = "disaster";
+                } else {
+                    second = "tech";
+                }
+                if (order[2] == covid) {
+                    third = "covid";
+
+                } else if (order[2] == politics) {
+                    third = "politics";
+                } else if (order[2] == meme) {
+                    third = "meme";
+                } else if (order[2] == entertainment) {
+                    third = "entertainment";
+                } else if (order[2] == memetelugu) {
+                    third = "memetelugu";
+                } else if (order[2] == memehindi) {
+                    third = "memehindi";
+                } else if (order[2] == memeenglish) {
+                    third = "memeenglish";
+                } else if (order[2] == Ap) {
+                    third = "Ap";
+                } else if (order[2] == Telangana) {
+                    third = "Telangana";
+                } else if (order[2] == sports) {
+                    third = "sports";
+                } else if (order[2] == disaster) {
+                    third = "disaster";
+                } else {
+                    third = "tech";
+                }
+
+                    FirebaseMessaging.getInstance().subscribeToTopic(first);
+                getposts(first, second, third);
+
+
+            }
+            else{
+                    capture();
+                }
+
+
+            }
+        });
+
+       Handler handler=new Handler();
+       handler.postDelayed(new Runnable() {
+           @SuppressLint("ApplySharedPref")
+           @Override
+           public void run() {
+               SharedPreferences sharedpreferences = getSharedPreferences("rewardtime", Context.MODE_PRIVATE);
+               SharedPreferences.Editor editor=sharedpreferences.edit();
+               editor.putString("time","ok");
+               editor.apply();
+               Toast.makeText(Feed.this, "Daily reward available", Toast.LENGTH_LONG).show();
+           }
+       },5000);
+
+        //  loadBanner();
         final String email = firebaseAuth.getCurrentUser().getEmail();
         final String uid = firebaseAuth.getCurrentUser().getUid();
         final String name = firebaseAuth.getCurrentUser().getDisplayName();
@@ -94,44 +322,34 @@ public class Feed extends AppCompatActivity {
                 //get posts from database
             }
         });
-        getposts();
-        AdLoader adLoader = new AdLoader.Builder(Feed.this, "ca-app-pub-3940256099942544/2247696110")
-                .forUnifiedNativeAd(new UnifiedNativeAd.OnUnifiedNativeAdLoadedListener() {
-                    @Override
-                    public void onUnifiedNativeAdLoaded(UnifiedNativeAd unifiedNativeAd) {
-                        // Show the ad.
-                        FrameLayout frameLayout =
-                                findViewById(R.id.nativea);
-                        UnifiedNativeAdView adView = (UnifiedNativeAdView) getLayoutInflater()
-                                .inflate(R.layout.ad_unified, null);
-                        populateUnifiedNativeAdView(unifiedNativeAd, adView);
-                        frameLayout.removeAllViews();
-                        frameLayout.addView(adView);
-                        if (isDestroyed()) {
-                            unifiedNativeAd.destroy();
-                            return;
-                        }
-                    }
-                })
-                .withAdListener(new AdListener() {
-                    @Override
-                    public void onAdFailedToLoad(int errorCode) {
-                        // Handle the failure by logging, altering the UI, and so on.
-                    }
-                })
-                .withNativeAdOptions(new NativeAdOptions.Builder()
-                        // Methods in the NativeAdOptions.Builder class can be
-                        // used here to specify individual options settings.
-                        .build())
-                .build();
-        adLoader.loadAds(new AdRequest.Builder().build(), 5);
+
+
     }
 
+    private void capture() {
+        FirebaseFirestore firebaseFirestore=FirebaseFirestore.getInstance();
+        CollectionReference collectionReference=firebaseFirestore.collection("posts");
+        Query query=collectionReference.limit(40);
+        FirestoreRecyclerOptions<post> options= new FirestoreRecyclerOptions.Builder<post>().setQuery(query,post.class).build();
+        adapter=new PostAdaptor(options);
+        postsre.setHasFixedSize(true);
+        postsre.setAdapter(adapter);
+        postsre.setLayoutManager(new LinearLayoutManager(this));
+        adapter.startListening();
+FastScrollerBuilder fastScrollerBuilder=new FastScrollerBuilder(postsre);
+fastScrollerBuilder.build();
+
+
+
+
+    }
+
+
     private void populateUnifiedNativeAdView(UnifiedNativeAd unifiedNativeAd, UnifiedNativeAdView adView) {
-      adView.setIconView(adView.findViewById(R.id.ad_icon));
-      adView.setHeadlineView(adView.findViewById(R.id.ad_headline));
-      adView.setAdvertiserView(adView.findViewById(R.id.ad_advertiser));
-      adView.setStarRatingView(adView.findViewById(R.id.ad_stars));
+        adView.setIconView(adView.findViewById(R.id.ad_icon));
+        adView.setHeadlineView(adView.findViewById(R.id.ad_headline));
+        adView.setAdvertiserView(adView.findViewById(R.id.ad_advertiser));
+        adView.setStarRatingView(adView.findViewById(R.id.ad_stars));
         adView.setBodyView(adView.findViewById(R.id.ad_body));
         adView.setMediaView((MediaView) adView.findViewById(R.id.ad_media));
         adView.setPriceView(adView.findViewById(R.id.ad_price));
@@ -141,7 +359,7 @@ public class Feed extends AppCompatActivity {
     }
 
 
-    private void loadBanner() {
+    /*private void loadBanner() {
         AdRequest adRequest =
                 new AdRequest.Builder()
                         .build();
@@ -151,34 +369,127 @@ public class Feed extends AppCompatActivity {
 
         //  Start loading the ad in the background.
         adView.loadAd(adRequest);
-    }
+    }*/
 
-    private AdSize getAdSize() {
-        // Step 2 - Determine the screen width (less decorations) to use for the ad width.
-        Display display = getWindowManager().getDefaultDisplay();
-        DisplayMetrics outMetrics = new DisplayMetrics();
-        display.getMetrics(outMetrics);
+    /**
+     * private AdSize getAdSize() {
+     * // Step 2 - Determine the screen width (less decorations) to use for the ad width.
+     * Display display = getWindowManager().getDefaultDisplay();
+     * DisplayMetrics outMetrics = new DisplayMetrics();
+     * display.getMetrics(outMetrics);
+     * <p>
+     * float widthPixels = outMetrics.widthPixels;
+     * float density = outMetrics.density;
+     * <p>
+     * int adWidth = (int) (widthPixels / density);
+     * <p>
+     * // Step 3 - Get adaptive ad size and return for setting on the ad view.
+     * return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(this, adWidth);
+     * }
+     */
 
-        float widthPixels = outMetrics.widthPixels;
-        float density = outMetrics.density;
-
-        int adWidth = (int) (widthPixels / density);
-
-        // Step 3 - Get adaptive ad size and return for setting on the ad view.
-        return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(this, adWidth);
-    }
-
-    private void getposts() {
-        FirebaseFirestore firebaseFirestore = FirebaseFirestore.getInstance();
-CollectionReference collectionReference=firebaseFirestore.collection("posts");
-        Query query = collectionReference;
-        FirestoreRecyclerOptions<post> options = new FirestoreRecyclerOptions.Builder<post>().setQuery(query, post.class).build();
-        adapter = new PostAdaptor(options);
+    private void getposts(final String first, final String second, String third) {
+        FirebaseFirestore firebaseFirestore=FirebaseFirestore.getInstance();
+        postsre.setLayoutManager(new LinearLayoutManager(this));
 
         postsre.setHasFixedSize(true);
-        postsre.setLayoutManager(new LinearLayoutManager(this));
-        postsre.setAdapter(adapter);
-        adapter.startListening();
+        CollectionReference collectionReference=firebaseFirestore.collection("posts");
+        Query query=collectionReference.whereEqualTo("type",first).limit(10);
+        Query query2=collectionReference.whereEqualTo("type",second).limit(10);
+        Query query3=collectionReference.whereEqualTo("type",third).limit(10);
+Query query4=collectionReference.limit(20);
+postsre.setHasFixedSize(true);
+postsre.setLayoutManager(new LinearLayoutManager(this));
+        query.get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+            @Override
+            public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                for (DocumentSnapshot documentSnapshot:task.getResult()){
+FirestoreRecyclerOptions<post> options=new FirestoreRecyclerOptions.Builder<post>().setQuery(query,post.class).build();
+adapter=new PostAdaptor(options);
+
+
+                    FirestoreRecyclerOptions<post> options1=new FirestoreRecyclerOptions.Builder<post>().setQuery(query2,post.class).build();
+
+                    FirestoreRecyclerOptions<post> options2=new FirestoreRecyclerOptions.Builder<post>().setQuery(query3,post.class).build();
+
+                    FirestoreRecyclerOptions<post> options3=new FirestoreRecyclerOptions.Builder<post>().setQuery(query4,post.class).build();
+                    postAdaptor2=new PostAdaptor2(options2);
+                    postAdaptor1=new PostAdaptor1(options1);
+                    postAdaptor3=new PostAdaptor3(options3);
+                    ConcatAdapter concatAdapter=new ConcatAdapter(adapter,postAdaptor1,postAdaptor2,postAdaptor3);
+                    postsre.setAdapter(concatAdapter);
+                    adapter.startListening();
+
+
+                }
+            }
+        });
+
+
+RecyclerView.OnScrollListener onScrollListener=new RecyclerView.OnScrollListener() {
+    @Override
+    public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+        super.onScrollStateChanged(recyclerView, newState);
+        if (newState==AbsListView.OnScrollListener.SCROLL_STATE_TOUCH_SCROLL){
+        isscrolling=true;}
     }
 
+    @Override
+    public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+        super.onScrolled(recyclerView, dx, dy);
+
+        int first = ((LinearLayoutManager)recyclerView.getLayoutManager()).findFirstVisibleItemPosition();
+
+        int visible = ((LinearLayoutManager)recyclerView.getLayoutManager()).getChildCount();
+        int total = ((LinearLayoutManager)recyclerView.getLayoutManager()).getItemCount();
+
+
+if (isscrolling && (first+visible==total)){
+    isscrolling=false;
+
+    if (state==0){
+
+    postAdaptor1.startListening();
+    state=state+1;
+
+    }
+  else  if (state==1){
+
+    postAdaptor2.startListening();
+    state=state+1;
+    }
+    else{
+
+    postAdaptor3.startListening();}
 }
+    }
+};postsre.addOnScrollListener(onScrollListener);
+
+FastScrollerBuilder fastScrollerBuilder=new FastScrollerBuilder(postsre);
+fastScrollerBuilder.build();
+}
+
+
+
+
+
+
+
+
+
+@Override
+    public void onStart() {
+
+    super.onStart();
+
+    BottomNavigationView bottomNavigationView = (BottomNavigationView) findViewById(R.id.bottom_navigation);
+    bottomNavigationView.setSelectedItemId(R.id.feed);
+}
+
+
+}
+
+
+
+
+

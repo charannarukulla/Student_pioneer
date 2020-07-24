@@ -3,27 +3,20 @@ package com.news.studentpioneer;
 public class post {
     private String title;
 
-    private String likes;
+    private int likes;
 private  String photo;
-
-    public String getPhoto() {
-        return photo;
-    }
-
-    public void setPhoto(String photo) {
-        this.photo = photo;
-    }
-
-    public post(String photo) {
-        this.photo = photo;
-    }
-
-    public post(String title, String likes) {
-        this.title = title;
-        this.likes = likes;
-    }
+private  String type;
+private String more;
 
     public post() {
+    }
+
+    public post(String title, int likes, String photo, String type, String more) {
+        this.title = title;
+        this.likes = likes;
+        this.photo = photo;
+        this.type = type;
+        this.more = more;
     }
 
     public String getTitle() {
@@ -34,11 +27,35 @@ private  String photo;
         this.title = title;
     }
 
-    public String getLikes() {
+    public int getLikes() {
         return likes;
     }
 
-    public void setLikes(String likes) {
+    public void setLikes(int likes) {
         this.likes = likes;
+    }
+
+    public String getPhoto() {
+        return photo;
+    }
+
+    public void setPhoto(String photo) {
+        this.photo = photo;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getMore() {
+        return more;
+    }
+
+    public void setMore(String more) {
+        this.more = more;
     }
 }
