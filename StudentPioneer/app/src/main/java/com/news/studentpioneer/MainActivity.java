@@ -108,7 +108,7 @@ String refered;
 
                     }
                 });
-        Glide.with(this).asGif().load(R.raw.logof).into(logo);//adding gif splash image
+        Glide.with(this).asGif().load(R.raw.logo).into(logo);//adding gif splash image
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -364,7 +364,7 @@ firebaseFirestore.collection("users").document(firebaseAuth.getCurrentUser().get
                                         Toast.makeText(MainActivity.this, "Signin success1", Toast.LENGTH_SHORT).show();
                                         startActivity(new Intent(MainActivity.this,Feed.class));
                                         finish();
-                                        overridePendingTransition(R.anim.right,R.anim.left);
+
                                     }
                                 });
 
@@ -390,7 +390,7 @@ firebaseFirestore.collection("users").document(firebaseAuth.getCurrentUser().get
                                                 Toast.makeText(MainActivity.this, "Signin success", Toast.LENGTH_SHORT).show();
                                                 startActivity(new Intent(MainActivity.this,Feed.class));
                                                 finish();
-                                                overridePendingTransition(R.anim.right,R.anim.left);
+
                                             }
                                         });
                                     }
@@ -416,7 +416,7 @@ firebaseFirestore.collection("users").document(firebaseAuth.getCurrentUser().get
                     Toast.makeText(MainActivity.this, "Signin success2", Toast.LENGTH_SHORT).show();
                     startActivity(new Intent(MainActivity.this,Feed.class));
                     finish();
-                    overridePendingTransition(R.anim.right,R.anim.left);
+
                 }
 
             }
@@ -427,7 +427,7 @@ firebaseFirestore.collection("users").document(firebaseAuth.getCurrentUser().get
     @Override
     public void finish() {
         super.finish();
-        overridePendingTransition(R.anim.left, R.anim.right);
+
     }
 
 }

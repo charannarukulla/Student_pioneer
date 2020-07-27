@@ -3,6 +3,7 @@ package com.news.studentpioneer;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Handler;
 import android.view.GestureDetector;
@@ -17,7 +18,12 @@ import android.widget.RatingBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.airbnb.lottie.LottieAnimationView;
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
 import com.firebase.ui.firestore.FirestoreRecyclerAdapter;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 import com.firebase.ui.firestore.paging.FirestorePagingAdapter;
@@ -46,6 +52,7 @@ import java.util.List;
 import java.util.Objects;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
 import static com.google.android.gms.common.internal.safeparcel.SafeParcelable.NULL;
@@ -80,6 +87,7 @@ FirebaseAuth firebaseAuth=FirebaseAuth.getInstance();
         ImageView photo;
         FrameLayout ad,ad1;
  Button more;
+ ImageView load;
         ImageView love;
         AdView adView;private  Context context;
         TextView likes;
@@ -89,6 +97,7 @@ FirebaseAuth firebaseAuth=FirebaseAuth.getInstance();
             photo=itemView.findViewById(R.id.photo);
             likes=itemView.findViewById(R.id.likes);
 love=itemView.findViewById(R.id.love);
+load=itemView.findViewById(R.id.load);
 
 more=itemView.findViewById(R.id.more);
                     ad = itemView.findViewById(R.id.ad_view_container);
@@ -117,8 +126,21 @@ more=itemView.findViewById(R.id.more);
     protected void onBindViewHolder(@NonNull final PostHolder holder, final int position, @NonNull final post model) {
       holder.title.setText(model.getTitle());
       final Context here = holder.photo.getContext();
-holder.likes.setText(String.valueOf(model.getLikes())+" People liked this");
-        Glide.with(here).load(model.getPhoto()).into(holder.photo);
+        holder.likes.setText(String.valueOf(model.getLikes())+" People liked this");
+      Glide.with(context).asGif().load(R.raw.gifl).into(holder.load);
+
+        Glide.with(here).load(model.getPhoto()).listener(new RequestListener<Drawable>() {
+            @Override
+            public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
+                return false;
+            }
+
+            @Override
+            public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+holder.load.setVisibility(View.INVISIBLE);
+                return false;
+            }
+        }).into(holder.photo);
         int viewType = viewtype(position);
         final int[] i = {0};
         if (model.getMore()==null){

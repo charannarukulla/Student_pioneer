@@ -27,9 +27,17 @@
               android:textSize="30dp"
               android:layout_alignParentTop="true"
               android:textAlignment="center"
-              />
+              tools:ignore="RtlCompat" />
             <ImageView
                 android:id="@+id/photo"
+                android:layout_below="@+id/title"
+                android:layout_width="1080px"
+                android:layout_margin="10dp"
+                android:layout_height="1080px"
+
+                tools:ignore="PxUsage" />
+            <ImageView
+                android:id="@+id/load"
                 android:layout_below="@+id/title"
                 android:layout_width="1080px"
                 android:layout_margin="10dp"

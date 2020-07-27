@@ -10,13 +10,13 @@ import androidx.recyclerview.widget.RecyclerView;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import io.customerly.Customerly;
-import me.zhanghai.android.fastscroll.FastScroller;
-import me.zhanghai.android.fastscroll.FastScrollerBuilder;
+
 
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentSender;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
@@ -39,6 +39,7 @@ import android.widget.Toast;
 
 import com.airbnb.lottie.LottieAnimationView;
 import com.bumptech.glide.Glide;
+import com.facebook.ads.AudienceNetworkAds;
 import com.firebase.ui.firestore.FirestoreRecyclerAdapter;
 import com.firebase.ui.firestore.FirestoreRecyclerAdapter_LifecycleAdapter;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
@@ -62,6 +63,11 @@ import com.google.android.gms.tasks.Task;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.play.core.appupdate.AppUpdateInfo;
+import com.google.android.play.core.appupdate.AppUpdateManager;
+import com.google.android.play.core.appupdate.AppUpdateManagerFactory;
+import com.google.android.play.core.install.model.AppUpdateType;
+import com.google.android.play.core.install.model.UpdateAvailability;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.dynamiclinks.FirebaseDynamicLinks;
 import com.google.firebase.dynamiclinks.PendingDynamicLinkData;
@@ -111,6 +117,7 @@ public class Feed extends AppCompatActivity {
     private FrameLayout adContainerView;
     private AdView adView;
     int order[];
+    private int REQEST_CODE=11;
     public static int adsafter = 1;
     String one;
     private String FCM_API = "https://fcm.googleapis.com/fcm/send";
@@ -130,11 +137,37 @@ public class Feed extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_feed);
         ButterKnife.bind(this);
+        AppUpdateManager appUpdateManager= AppUpdateManagerFactory.create(Feed.this);
+        com.google.android.play.core.tasks.Task<AppUpdateInfo> appUpdateInfoTask=appUpdateManager.getAppUpdateInfo();
+        appUpdateInfoTask.addOnSuccessListener(new com.google.android.play.core.tasks.OnSuccessListener<AppUpdateInfo>() {
+            @Override
+            public void onSuccess(AppUpdateInfo result) {
+if (result.updateAvailability()== UpdateAvailability.UPDATE_AVAILABLE&&result.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE)){
+    try {
+        appUpdateManager.startUpdateFlowForResult(result,AppUpdateType.IMMEDIATE,Feed.this,REQEST_CODE);
+    } catch (IntentSender.SendIntentException e) {
+        e.printStackTrace();
+    }
+
+}
+            }
+        });
+
         firebaseAuth = FirebaseAuth.getInstance();
+        AudienceNetworkAds.initialize(this);
 
+FirebaseFirestore firebaseFirestore=FirebaseFirestore.getInstance();
 
-
-
+firebaseFirestore.collection("notifi").document("img").get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+    @Override
+    public void onSuccess(DocumentSnapshot documentSnapshot) {
+   String url=documentSnapshot.getString("url");
+   SharedPreferences sharedPreferences=getSharedPreferences("notifi",MODE_PRIVATE);
+       String check= sharedPreferences.getString("seen","csc");
+   if (url!=null&& !url.equals(check)){
+   startActivity(new Intent(Feed.this,notifi.class));}
+    }
+});
         final String[] one1 = new String[1];
 
         BottomNavigationView bottomNavigationView = (BottomNavigationView) findViewById(R.id.bottom_navigation);
@@ -147,7 +180,7 @@ bottomNavigationView.setSelectedItemId(R.id.feed);
 
                     case R.id.rewards:
                         startActivity(new Intent(Feed.this,Daily_reward.class));
-                        overridePendingTransition(R.anim.right,R.anim.left);
+
                         return true;
                     case R.id.more:
                         startActivity(new Intent(Feed.this,Options.class));
@@ -170,7 +203,7 @@ bottomNavigationView.setSelectedItemId(R.id.feed);
             }
         },5000);
 
-        FirebaseFirestore firebaseFirestore = FirebaseFirestore.getInstance();
+        firebaseFirestore = FirebaseFirestore.getInstance();
         firebaseFirestore.collection("users").document(firebaseAuth.getCurrentUser().getUid()).get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
             @Override
             public void onSuccess(DocumentSnapshot documentSnapshot) {
@@ -307,7 +340,7 @@ bottomNavigationView.setSelectedItemId(R.id.feed);
                editor.apply();
                Toast.makeText(Feed.this, "Daily reward available", Toast.LENGTH_LONG).show();
            }
-       },5000);
+       },120000);
 
         //  loadBanner();
         final String email = firebaseAuth.getCurrentUser().getEmail();
@@ -329,15 +362,15 @@ bottomNavigationView.setSelectedItemId(R.id.feed);
     private void capture() {
         FirebaseFirestore firebaseFirestore=FirebaseFirestore.getInstance();
         CollectionReference collectionReference=firebaseFirestore.collection("posts");
-        Query query=collectionReference.limit(40);
+        Query query=collectionReference.limit(40).orderBy("time", Query.Direction.DESCENDING);
         FirestoreRecyclerOptions<post> options= new FirestoreRecyclerOptions.Builder<post>().setQuery(query,post.class).build();
+
         adapter=new PostAdaptor(options);
         postsre.setHasFixedSize(true);
         postsre.setAdapter(adapter);
         postsre.setLayoutManager(new LinearLayoutManager(this));
         adapter.startListening();
-FastScrollerBuilder fastScrollerBuilder=new FastScrollerBuilder(postsre);
-fastScrollerBuilder.build();
+
 
 
 
@@ -394,10 +427,10 @@ fastScrollerBuilder.build();
 
         postsre.setHasFixedSize(true);
         CollectionReference collectionReference=firebaseFirestore.collection("posts");
-        Query query=collectionReference.whereEqualTo("type",first).limit(10);
-        Query query2=collectionReference.whereEqualTo("type",second).limit(10);
-        Query query3=collectionReference.whereEqualTo("type",third).limit(10);
-Query query4=collectionReference.limit(20);
+        Query query=collectionReference.whereEqualTo("type",first).limit(10).orderBy("time", Query.Direction.DESCENDING);
+        Query query2=collectionReference.whereEqualTo("type",second).limit(10).orderBy("time", Query.Direction.DESCENDING);
+        Query query3=collectionReference.whereEqualTo("type",third).limit(10).orderBy("time", Query.Direction.DESCENDING);
+Query query4=collectionReference.limit(20).orderBy("time", Query.Direction.DESCENDING);
 postsre.setHasFixedSize(true);
 postsre.setLayoutManager(new LinearLayoutManager(this));
         query.get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
@@ -465,8 +498,7 @@ if (isscrolling && (first+visible==total)){
     }
 };postsre.addOnScrollListener(onScrollListener);
 
-FastScrollerBuilder fastScrollerBuilder=new FastScrollerBuilder(postsre);
-fastScrollerBuilder.build();
+
 }
 
 
@@ -481,12 +513,35 @@ fastScrollerBuilder.build();
     public void onStart() {
 
     super.onStart();
+    SharedPreferences sharedpreferences = getSharedPreferences("start", Context.MODE_PRIVATE);
 
+  if (sharedpreferences.getString("first", "yes").equals("yes")){
+      startActivity(new Intent(Feed.this,Intro.class));
+      finish();
+  }
     BottomNavigationView bottomNavigationView = (BottomNavigationView) findViewById(R.id.bottom_navigation);
     bottomNavigationView.setSelectedItemId(R.id.feed);
 }
 
 
+    public void addmeme(View view) {
+        Toast.makeText(this, "Please send us a \"hi\"", Toast.LENGTH_LONG).show();
+        Customerly.openSupport(Feed.this);
+        final String email = firebaseAuth.getCurrentUser().getEmail();
+        final String uid = firebaseAuth.getCurrentUser().getUid();
+        final String name = firebaseAuth.getCurrentUser().getDisplayName();
+        Customerly.registerUser(email, uid, name);
+
+
+    }
+    @Override
+    protected void onActivityResult(int requestcode,int resultcode,@Nullable Intent data) {
+
+        super.onActivityResult(requestcode, resultcode, data);
+        if (REQEST_CODE==requestcode){
+            Toast.makeText(this, "Download start", Toast.LENGTH_SHORT).show();
+        }
+    }
 }
 
 
