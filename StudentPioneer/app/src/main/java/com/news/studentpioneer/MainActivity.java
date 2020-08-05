@@ -39,11 +39,18 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.FirebaseOptions;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.dynamiclinks.FirebaseDynamicLinks;
 import com.google.firebase.dynamiclinks.PendingDynamicLinkData;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -57,11 +64,18 @@ import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
     private FirebaseAuth mAuth;
+    private DatabaseReference mDatabase;
+    FirebaseFirestore scored;
+    @BindView(R.id.cmri)ImageView cmri;
+    @BindView(R.id.samai)ImageView samai;
 @BindView(R.id.logo)//BInding views
     ImageView logo;//BInding views
     GoogleSignInClient googleSignInClient ;
     private static final int RC_SIGN_IN = 1;
-
+    @
+            BindView(R.id.sama)ImageView sama;
+    @BindView(R.id.cmr)ImageView cmr;
+    FirebaseApp fir;
 String refered;
     @SuppressLint("ResourceType")
     @Override
@@ -71,6 +85,19 @@ String refered;
         ButterKnife.bind(this);
         mAuth = FirebaseAuth.getInstance();
 
+        mDatabase = FirebaseDatabase.getInstance().getReference();
+        FirebaseOptions firebaseOptions=new FirebaseOptions.Builder().setApiKey("AIzaSyCNUUB9c08mm_xsh-JYnKcuKVhZGBQDPcc").setApplicationId("1:975392275640:android:44fe3a4132781fbdb2084d").setProjectId("toptowin-a8c7f").build();
+        try {   fir=  FirebaseApp.initializeApp(this,firebaseOptions,"tesvfgrtidwdjiid123");
+
+        }catch (Exception e){
+
+
+
+        }
+
+
+
+        scored=FirebaseFirestore.getInstance(FirebaseApp.getInstance("tesvfgrtidwdjiid123"));
         FirebaseFirestore firebaseFirestore=FirebaseFirestore.getInstance();
         FirebaseDynamicLinks.getInstance()
                 .getDynamicLink(getIntent())
@@ -108,11 +135,16 @@ String refered;
 
                     }
                 });
-        Glide.with(this).asGif().load(R.raw.logo).into(logo);//adding gif splash image
+
+        Glide.with(this).load(R.raw.logo).into(logo);//adding gif splash image
+        Glide.with(this).load(R.raw.sam).into(sama);
+        Glide.with(this).load(R.raw.cmrtc).into(cmr);
+        Glide.with(this).load(R.raw.cmri).into(cmri);
+        Glide.with(this).load(R.raw.samai).into(samai);
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
-              login();//login user
+              login();//login using
 
             }
         }, 3000);//check after 3 seconds
@@ -124,14 +156,46 @@ String refered;
     private void login() {
 
         FirebaseUser currentUser = mAuth.getCurrentUser();
-        if (currentUser==null){
+        SharedPreferences sharedPreferences=getSharedPreferences("login",MODE_PRIVATE);
+   String loginc= sharedPreferences.getString("login","no");
+
+        if (currentUser==null|| loginc.equals("no")){
+
+            if (refered==null){
+           MaterialAlertDialogBuilder materialAlertDialogBuilder=new MaterialAlertDialogBuilder(this).setTitle("refered?").setMessage("Do you have referral link?").setPositiveButton("YES", new DialogInterface.OnClickListener() {
+               @Override
+               public void onClick(DialogInterface dialog, int which) {
+                   dialog.dismiss();
+                   MaterialAlertDialogBuilder materialAlertDialogBuilder1=new MaterialAlertDialogBuilder(MainActivity.this).setMessage("PLEASE TAP ON THAT LINK NOW TO GET YOUR 100points").setPositiveButton("ok", new DialogInterface.OnClickListener() {
+                       @Override
+                       public void onClick(DialogInterface dialog, int which) {
+                      dialog.dismiss();
+                      System.exit(0);
+                       }
+                   });materialAlertDialogBuilder1.show();
+               }
+           }).setNegativeButton("NO", new DialogInterface.OnClickListener() {
+               @Override
+               public void onClick(DialogInterface dialog, int which) {
+                   dialog.dismiss();
+                   GoogleSignInOptions gso =  new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                           .requestIdToken("317387905625-5t1tippgr44fcmhoehstdofqvjqv0drg.apps.googleusercontent.com")//you can also use R.string.default_web_client_id
+                           .requestEmail()
+                           .build();
+                   googleSignInClient=GoogleSignIn.getClient(MainActivity.this,gso);
+                   Intent signInIntent = googleSignInClient.getSignInIntent();
+                   startActivityForResult(signInIntent, RC_SIGN_IN);
+               }
+           });materialAlertDialogBuilder.show();
+            }
+            else{
             GoogleSignInOptions gso =  new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                     .requestIdToken("317387905625-5t1tippgr44fcmhoehstdofqvjqv0drg.apps.googleusercontent.com")//you can also use R.string.default_web_client_id
                     .requestEmail()
                     .build();
             googleSignInClient=GoogleSignIn.getClient(this,gso);
             Intent signInIntent = googleSignInClient.getSignInIntent();
-            startActivityForResult(signInIntent, RC_SIGN_IN);
+            startActivityForResult(signInIntent, RC_SIGN_IN);}
         }
         else {
             Toast.makeText(this, "Logging In", Toast.LENGTH_SHORT).show();
@@ -214,8 +278,10 @@ FirebaseFirestore firebaseFirestore=FirebaseFirestore.getInstance();
 
                                           }
                                       });
+                              scored=FirebaseFirestore.getInstance(FirebaseApp.getInstance("tesvfgrtidwdjiid123"));
+
                               // Sign in success, update UI with the signed-in user's information
-                              firebaseFirestore.collection("score").document(user.getUid()).get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+                              scored.collection("score").document(user.getUid()).get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
                                   @Override
                                   public void onSuccess(DocumentSnapshot documentSnapshot) {
 
@@ -225,14 +291,14 @@ FirebaseFirestore firebaseFirestore=FirebaseFirestore.getInstance();
                                           HashMap<String, Integer> points=new HashMap<>();
                                           points.put("points",0);
 
-                                          firebaseFirestore.collection("score").document(user.getUid()).set(points).addOnCompleteListener(new OnCompleteListener<Void>() {
+                                          scored.collection("score").document(user.getUid()).set(points).addOnCompleteListener(new OnCompleteListener<Void>() {
                                               @Override
                                               public void onComplete(@NonNull Task<Void> task) {
 
                                                   HashMap<String,Object> doa=new HashMap<>();
                                                   doa.put("score","0");
                                                   doa.put("name",user.getDisplayName());
-                                                  firebaseFirestore.collection("score").document(user.getUid()).update(doa);
+                                                  scored.collection("score").document(user.getUid()).update(doa);
 
 refer();
 
@@ -284,7 +350,7 @@ refer();
                                                 }
                                             });
                                     // Sign in success, update UI with the signed-in user's information
-                                    firebaseFirestore.collection("score").document(user.getUid()).get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+                                    scored.collection("score").document(user.getUid()).get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
                                         @Override
                                         public void onSuccess(DocumentSnapshot documentSnapshot) {
 
@@ -294,14 +360,14 @@ refer();
                                                 HashMap<String, Integer> points=new HashMap<>();
                                                 points.put("points",0);
 
-                                                firebaseFirestore.collection("score").document(user.getUid()).set(points).addOnCompleteListener(new OnCompleteListener<Void>() {
+                                                scored.collection("score").document(user.getUid()).set(points).addOnCompleteListener(new OnCompleteListener<Void>() {
                                                     @Override
                                                     public void onComplete(@NonNull Task<Void> task) {
 
                                                         HashMap<String,Object> doa=new HashMap<>();
                                                         doa.put("score","0");
                                                         doa.put("name",user.getDisplayName());
-                                                        firebaseFirestore.collection("score").document(user.getUid()).update(doa);
+                                                        scored.collection("score").document(user.getUid()).update(doa);
 
 refer();
 
@@ -344,7 +410,7 @@ refer();
             public void onSuccess(DocumentSnapshot documentSnapshot) {
 
                 if (documentSnapshot.getString(androidId)==null){
-                    Toast.makeText(MainActivity.this, "entered", Toast.LENGTH_SHORT).show();
+
 
 HashMap<String,Object> date=new HashMap<>();
 date.put("date","csc");
@@ -361,6 +427,10 @@ firebaseFirestore.collection("users").document(firebaseAuth.getCurrentUser().get
                                 firebaseFirestore.collection("refer").document("checkit").update(set).addOnSuccessListener(new OnSuccessListener<Void>() {
                                     @Override
                                     public void onSuccess(Void aVoid) {
+                                        SharedPreferences sharedPreferences=getSharedPreferences("login",MODE_PRIVATE);
+                                        SharedPreferences.Editor editor=sharedPreferences.edit();
+                                        editor.putString("login","yes");
+                                        editor.apply();
                                         Toast.makeText(MainActivity.this, "Signin success1", Toast.LENGTH_SHORT).show();
                                         startActivity(new Intent(MainActivity.this,Feed.class));
                                         finish();
@@ -372,27 +442,48 @@ firebaseFirestore.collection("users").document(firebaseAuth.getCurrentUser().get
                             else{
                                 HashMap<String,Object> set=new HashMap<>();
                                 set.put(androidId,refered);
-                                firebaseFirestore.collection("refer").document("checkit").update(set);
-                                firebaseFirestore.collection("score").document(refered).get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+                                scored  .collection("refer").document("checkit").update(set);
+                                scored.collection("score").document(refered).get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
                                     @Override
                                     public void onSuccess(DocumentSnapshot documentSnapshot) {
                                         String ps=documentSnapshot.getString("score");
-                                        int pos= Math.toIntExact(documentSnapshot.getLong("points"));
+                                        int pos= 0;
+                                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                                            pos = Math.toIntExact(documentSnapshot.getLong("points"));
+                                        }
                                         String ns= String.valueOf(pos+200);
-                                        firebaseFirestore.collection("score").document(refered).update("points",pos+200);
-                                        firebaseFirestore.collection("score").document(refered).update("score",ns);
-                                        firebaseFirestore.collection("score").document(firebaseAuth.getCurrentUser().getUid()).update("score","100");
-                                        firebaseFirestore.collection("score").document(firebaseAuth.getCurrentUser().getUid()).update("points",100).addOnSuccessListener(new OnSuccessListener<Void>() {
+                                        scored.collection("score").document(refered).update("points",pos+200).addOnSuccessListener(new OnSuccessListener<Void>() {
                                             @Override
                                             public void onSuccess(Void aVoid) {
+                                                scored.collection("score").document(refered).update("score",ns).addOnSuccessListener(new OnSuccessListener<Void>() {
+                                                    @Override
+                                                    public void onSuccess(Void aVoid) {
+                                                        scored.collection("score").document(firebaseAuth.getCurrentUser().getUid()).update("score","100").addOnSuccessListener(new OnSuccessListener<Void>() {
+                                                            @Override
+                                                            public void onSuccess(Void aVoid) {
+                                                                scored.collection("score").document(firebaseAuth.getCurrentUser().getUid()).update("points",100).addOnSuccessListener(new OnSuccessListener<Void>() {
+                                                                    @Override
+                                                                    public void onSuccess(Void aVoid) {
+                                                                        SharedPreferences sharedPreferences=getSharedPreferences("login",MODE_PRIVATE);
+                                                                        SharedPreferences.Editor editor=sharedPreferences.edit();
+                                                                        editor.putString("login","yes");
+                                                                        editor.apply();
+                                                                        Toast.makeText(MainActivity.this, "100 points added for joining by your friend", Toast.LENGTH_LONG).show();
+                                                                        Toast.makeText(MainActivity.this, "Signin success", Toast.LENGTH_SHORT).show();
+                                                                        startActivity(new Intent(MainActivity.this,Feed.class));
+                                                                        finish();
 
-                                                Toast.makeText(MainActivity.this, "100 points added for joining by your friend", Toast.LENGTH_LONG).show();
-                                                Toast.makeText(MainActivity.this, "Signin success", Toast.LENGTH_SHORT).show();
-                                                startActivity(new Intent(MainActivity.this,Feed.class));
-                                                finish();
-
+                                                                    }
+                                                                });
+                                                            }
+                                                        });
+                                                    }
+                                                });
                                             }
                                         });
+
+
+
                                     }
                                 });
 
@@ -412,7 +503,10 @@ firebaseFirestore.collection("users").document(firebaseAuth.getCurrentUser().get
 
                     }
                 else
-                {
+                {  SharedPreferences sharedPreferences=getSharedPreferences("login",MODE_PRIVATE);
+                    SharedPreferences.Editor editor=sharedPreferences.edit();
+                    editor.putString("login","yes");
+                    editor.apply();
                     Toast.makeText(MainActivity.this, "Signin success2", Toast.LENGTH_SHORT).show();
                     startActivity(new Intent(MainActivity.this,Feed.class));
                     finish();
@@ -427,6 +521,7 @@ firebaseFirestore.collection("users").document(firebaseAuth.getCurrentUser().get
     @Override
     public void finish() {
         super.finish();
+
 
     }
 

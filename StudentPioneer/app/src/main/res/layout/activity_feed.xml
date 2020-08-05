@@ -9,7 +9,8 @@
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@drawable/head_shape"/>
+        android:background="@drawable/head_shape"
+        tools:ignore="NewApi" />
     <TextView
 
         android:text="FEED"
@@ -52,15 +53,7 @@
         app:backgroundTint="@color/design_default_color_background"
         android:contentDescription="SUPPORT"
         app:srcCompat="@drawable/help"/>
-    <Button
-        android:id="@+id/add"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="ADD NEW MEME AND EARN"
-        android:onClick="addmeme"
-        android:layout_below="@+id/toolbar"
-        android:layout_centerHorizontal="true"
-        />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/postrecycler"
         android:layout_width="match_parent"
@@ -72,7 +65,7 @@
         app:fastScrollVerticalThumbDrawable="@drawable/thumb_drawable"
         app:fastScrollVerticalTrackDrawable="@drawable/line_drawable"
 android:layout_above="@+id/bottom_navigation"
-        android:layout_below="@id/add"
+        android:layout_below="@id/toolbar"
       />
 
 
@@ -82,6 +75,7 @@ android:layout_above="@+id/bottom_navigation"
         android:layout_height="wrap_content"
         android:background="@color/cardview_light_background"
       android:layout_alignParentBottom="true"
+        app:labelVisibilityMode="labeled"
         app:menu="@menu/bottom_navigation_menu" />
 
 </RelativeLayout>

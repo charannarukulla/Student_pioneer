@@ -62,7 +62,8 @@ public class PostAdaptor extends FirestoreRecyclerAdapter<post, PostAdaptor.Post
     private Context context;
 FirebaseFirestore firebaseFirestore=FirebaseFirestore.getInstance();
 FirebaseAuth firebaseAuth=FirebaseAuth.getInstance();
-
+    private float x1,x2;
+    static final int MIN_DISTANCE = 150;
     @SuppressLint("InflateParams")
     ViewGroup s;
     View va;
@@ -173,6 +174,7 @@ context.startActivity(browserIntent);
         });
 
         final Boolean[] dc = {false};
+
 holder.photo.setOnClickListener(new View.OnClickListener() {
     @Override
     public void onClick(View v) {

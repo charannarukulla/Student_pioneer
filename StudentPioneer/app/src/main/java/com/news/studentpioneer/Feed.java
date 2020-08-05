@@ -3,7 +3,7 @@ package com.news.studentpioneer;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.paging.PagedList;
+
 import androidx.recyclerview.widget.ConcatAdapter;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -68,6 +68,8 @@ import com.google.android.play.core.appupdate.AppUpdateManager;
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory;
 import com.google.android.play.core.install.model.AppUpdateType;
 import com.google.android.play.core.install.model.UpdateAvailability;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.FirebaseOptions;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.dynamiclinks.FirebaseDynamicLinks;
 import com.google.firebase.dynamiclinks.PendingDynamicLinkData;
@@ -105,6 +107,7 @@ public class Feed extends AppCompatActivity {
     RecyclerView postsre;
     private DocumentSnapshot last;
     private Boolean isscrolling=false;
+    Runnable runnable;
     PostAdaptor1 postAdaptor1;
     PostAdaptor2 postAdaptor2;
     PostAdaptor3 postAdaptor3;
@@ -129,6 +132,9 @@ public class Feed extends AppCompatActivity {
     private Boolean islastitemreached;
     int state=0;
     String refered;
+    FirebaseApp fir;
+    Handler handler;
+    FirebaseFirestore scored;
     String first, second, third, fourth, fifth, sixth, seventh, eighth, nine, ten, eleven, twelle;
 
     @SuppressLint("ResourceType")
@@ -137,6 +143,18 @@ public class Feed extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_feed);
         ButterKnife.bind(this);
+        FirebaseOptions firebaseOptions=new FirebaseOptions.Builder().setApiKey("AIzaSyCNUUB9c08mm_xsh-JYnKcuKVhZGBQDPcc").setApplicationId("1:975392275640:android:44fe3a4132781fbdb2084d").setProjectId("toptowin-a8c7f").build();
+        try {   fir=  FirebaseApp.initializeApp(this,firebaseOptions,"tesvfgrtidwdjiid123");
+
+        }catch (Exception e){
+
+
+
+        }
+
+
+
+        scored=FirebaseFirestore.getInstance(FirebaseApp.getInstance("tesvfgrtidwdjiid123"));
         AppUpdateManager appUpdateManager= AppUpdateManagerFactory.create(Feed.this);
         com.google.android.play.core.tasks.Task<AppUpdateInfo> appUpdateInfoTask=appUpdateManager.getAppUpdateInfo();
         appUpdateInfoTask.addOnSuccessListener(new com.google.android.play.core.tasks.OnSuccessListener<AppUpdateInfo>() {
@@ -182,6 +200,9 @@ bottomNavigationView.setSelectedItemId(R.id.feed);
                         startActivity(new Intent(Feed.this,Daily_reward.class));
 
                         return true;
+                    case R.id.store:
+                        startActivity(new Intent(Feed.this,Store.class));
+                        return  true;
                     case R.id.more:
                         startActivity(new Intent(Feed.this,Options.class));
                         return true;
@@ -222,7 +243,7 @@ bottomNavigationView.setSelectedItemId(R.id.feed);
                 int temp;
 
                 order = new int[]{covid, politics, entertainment, meme, memeenglish, memehindi, memetelugu, Ap, Telangana, sports, disaster, tech};
-                if (covid > 15 || politics > 15 || entertainment > 15|| meme > 15 || memeenglish > 15 || memehindi > 15 || memetelugu > 15 || Ap > 15|| Telangana > 15 || sports > 15 || disaster > 15 || tech > 15) {
+                if (covid > 10 || politics > 10 || entertainment > 10|| meme > 10 || memeenglish > 10 || memehindi > 10 || memetelugu > 10 || Ap > 10|| Telangana > 10 || sports > 10 || disaster > 10 || tech > 10) {
 
 
                     for (int i = 0; i < 12; i++) {
@@ -329,9 +350,8 @@ bottomNavigationView.setSelectedItemId(R.id.feed);
             }
         });
 
-       Handler handler=new Handler();
-       handler.postDelayed(new Runnable() {
-           @SuppressLint("ApplySharedPref")
+        handler=new Handler();
+        runnable=new Runnable() {
            @Override
            public void run() {
                SharedPreferences sharedpreferences = getSharedPreferences("rewardtime", Context.MODE_PRIVATE);
@@ -340,7 +360,8 @@ bottomNavigationView.setSelectedItemId(R.id.feed);
                editor.apply();
                Toast.makeText(Feed.this, "Daily reward available", Toast.LENGTH_LONG).show();
            }
-       },120000);
+       };handler.postDelayed(runnable,120000);
+
 
         //  loadBanner();
         final String email = firebaseAuth.getCurrentUser().getEmail();
@@ -513,6 +534,7 @@ if (isscrolling && (first+visible==total)){
     public void onStart() {
 
     super.onStart();
+
     SharedPreferences sharedpreferences = getSharedPreferences("start", Context.MODE_PRIVATE);
 
   if (sharedpreferences.getString("first", "yes").equals("yes")){
@@ -541,6 +563,13 @@ if (isscrolling && (first+visible==total)){
         if (REQEST_CODE==requestcode){
             Toast.makeText(this, "Download start", Toast.LENGTH_SHORT).show();
         }
+    }
+    @Override
+    protected  void onStop() {
+
+        super.onStop();
+
+handler.removeCallbacks(runnable);
     }
 }
 

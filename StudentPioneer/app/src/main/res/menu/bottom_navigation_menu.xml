@@ -7,11 +7,17 @@
     android:title="FEED"
 
     />
+
     <item
         android:id="@+id/rewards"
         android:icon="@drawable/rew"
-        android:title="DAILY REWARDS"
+        android:title="GET MN COINS"
        />
+    <item
+        android:id="@+id/store"
+        android:icon="@drawable/luck"
+        android:title="Dukaan"
+        />
     <item
         android:id="@+id/more"
         android:icon="@drawable/more"
